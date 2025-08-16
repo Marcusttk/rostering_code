@@ -28,6 +28,7 @@ def update_calendar(calendar_dict):
 def main():
     # update all shorthands in the fg1_names.json also
     people_dict = json.load(open("./fg1_names.json"))
+    ooo_dict = json.load(open("./people_ooo.json"))
     print(1)
     # ics file is deleted so that you don't have to keep changing the name to the latest copy.
 
