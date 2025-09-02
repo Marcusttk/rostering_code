@@ -1,6 +1,8 @@
 from ics import Calendar  # pip3 install ics
 import json
 from datetime import date, datetime, timedelta
+import math
+import random
 
 # Open the .ics file, adjust this accordingly
 desktop_file_path = "C:/Users/ace-j/Downloads/" + "FG1 OOO Calendar.ics"
@@ -88,8 +90,92 @@ def build_calendar_dict(people_dict, ooo_dict):
     return ooo_dict
 
 
-def calculate_rosters(roster, ooo_dict, start_date, duration):
-    print(1)
+# TODO this algo needs to change
+# this function runs when someone in their planned shift is unavailable
+def roster_shuffle(order, people_to_swap, dates_list, people_ooo):
+    while not people_to_swap:
+        random.shuffle(order)
+        people_to_swap = check_their_availability(order, dates_list, people_ooo)
+    return order
+
+
+# TODO can be optimised further, this is slow if there is one person who cannot make it
+def check_their_availability(order, dates_list, people_ooo):
+    count = 0
+    people_who_need_to_swap = []
+    for people in order:
+        if people not in people_ooo:
+            print(people + " is not in people_ooo")
+        else:
+            for dates in dates_list[count]:
+                if str(dates[2]) in people_ooo[people][str(dates[0])][str(dates[1])]:
+                    people_who_need_to_swap.append(people)
+        count += 1
+    return people_who_need_to_swap
+
+
+def build_dates_list(start_date, days_of_the_week, repeats):
+    all_days = []
+    for times in range(repeats):
+        days_this_week = []
+        for days in days_of_the_week:
+            new_date = start_date + timedelta(days=int(days))
+            days_this_week.append([new_date.year, new_date.month, new_date.day])
+        all_days.append(days_this_week)
+        start_date += timedelta(days=int(7))
+    return all_days
+
+
+# duration needs to be measured in terms of weeks
+def compute_repeats(people_involved, duration):
+    count = len(people_involved)
+    if count >= 12:
+        repeats = count
+    else:
+        repeats = math.ceil(duration / count) * count
+    return repeats
+
+
+# TODO this function needs to be fixed, code is a bit messy
+def create_schedule(order, all_dates, repeats):
+    roster_solution = {}
+    loops = int(repeats / len(order))
+    for loop in range(loops):
+        for count in range(len(order)):
+            person = order[count]
+            for date_list in all_dates[count * (loop + 1)]:
+                date_list_str = str(date_list[2]) + "-" + str(date_list[1]) + "-" + str(date_list[0])
+                roster_solution[date_list_str] = person
+    # print(roster_solution)
+    return roster_solution
+
+
+# TODO right now the code doesn't account for the fact that 1 ooo in the week isn't a big deal.
+# the roster should also be your fg1_rosters["team"]. It's specific to the team
+# start date should be [year,month,day]
+def calculate_rosters(roster, ooo_dict, start_date):
+    date_to_check = datetime(start_date[0], start_date[1], start_date[2])
+    if date_to_check.weekday() != 0:  # mon = 0 , sunday = 6
+        print("Start date should be a monday!")
+        exit()
+    else:
+        start_dt_str = str(start_date[0]) + "-" + str(start_date[1]) + "-" + str(start_date[2])
+        start = datetime.strptime(start_dt_str, "%Y-%m-%d")
+        # duration for now will be toggled to 3 months or 3 full cycles, whichever is longer
+        # if it's longer than 3 months will round up to completion of next cycle.
+        duration = 12  # number of weeks, can be adjusted
+        repeats = compute_repeats(roster["order"], duration)
+        all_days = build_dates_list(start, roster["applicable days"], repeats)
+        people_to_swap = check_their_availability(roster["order"], all_days, ooo_dict)
+        # only bother to run swapping algo if there is one person who is unable to make it.
+        if people_to_swap:
+            new_order = roster_shuffle(roster["order"], people_to_swap, all_days, ooo_dict)
+        else:
+            new_order = roster["order"]
+        roster_solution = create_schedule(new_order, all_days, repeats)
+        for items in roster_solution:
+            roster["dates"][items] = roster_solution[items]
+    return roster
 
 
 def main():
@@ -98,9 +184,12 @@ def main():
     ooo_dict = json.load(open("./people_ooo.json"))
     rosters = json.load(open("./fg1_rosters.json"))
     ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict)
-
+    start_date = [2025, 9, 8]
+    rosters = calculate_rosters(rosters["pnw"], ooo_dict, start_date)
     with open("./people_ooo.json", "w") as file:
         json.dump(ooo_dict, file, indent=4)
+    with open("./fg1_rosters.json", "w") as file:
+        json.dump(rosters, file, indent=4)
     # ics file is deleted so that you don't have to keep changing the name to the latest copy.
 
 
