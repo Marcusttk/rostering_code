@@ -51,28 +51,22 @@ def return_dates(start_date, end_date):
 
 
 def create_year_month_entry(ooo_dict, person):
-    year = int(date.today().year)
+    year = date.today().year
     if person not in ooo_dict:
-        # creates a year with months 1 to 12
-        ooo_dict[person] = {year: {i: {} for i in range(1, 13)},
-                            year + 1: {i: {} for i in range(1, 13)}}
-    else:
-        # this creates a new year entry for that person
-        if year not in ooo_dict[person]:
-            ooo_dict[person][year] = {i: {} for i in range(1, 13)}
-        if year + 1 not in ooo_dict[person]:
-            ooo_dict[person][year + 1] = {i: {} for i in range(1, 13)}
-    # print(ooo_dict)
+        ooo_dict[person] = {}
+    for y in [year, year + 1]:
+        if str(y) not in ooo_dict[person]:
+            ooo_dict[person][str(y)] = {str(m): {} for m in range(1, 13)}
     return ooo_dict
 
 
 # dates should be a nested list [[year], [month], [days]]
 def update_ooo_dict(dates, person, ooo_dict):
-    # you want to pre create everything to eliminate the need to check for years or months
     ooo_dict = create_year_month_entry(ooo_dict, person)
-    # format of entries = [year, month, day]
-    for entries in dates:
-        ooo_dict[person][entries[0]][entries[1]][entries[2]] = 0
+    for year, month, day in dates:
+        year, month, day = str(year), str(month), str(day)
+        if day not in ooo_dict[person][year][month]:
+            ooo_dict[person][year][month][day] = 0
     return ooo_dict
 
 
@@ -94,7 +88,7 @@ def build_calendar_dict(people_dict, ooo_dict):
     return ooo_dict
 
 
-def calculate_rosters(roster, ooo_dict):
+def calculate_rosters(roster, ooo_dict, start_date, duration):
     print(1)
 
 
@@ -102,6 +96,7 @@ def main():
     # update all shorthands in the fg1_names.json also
     people_dict = json.load(open("./fg1_names.json"))
     ooo_dict = json.load(open("./people_ooo.json"))
+    rosters = json.load(open("./fg1_rosters.json"))
     ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict)
 
     with open("./people_ooo.json", "w") as file:
