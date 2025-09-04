@@ -99,6 +99,9 @@ def roster_shuffle(order, people_to_swap, dates_list, people_ooo):
     return order
 
 
+def roster_shuffler():
+
+
 # TODO can be optimised further, this is slow if there is one person who cannot make it
 def check_their_availability(order, dates_list, people_ooo):
     count = 0
