@@ -99,7 +99,48 @@ def roster_shuffle(order, people_to_swap, dates_list, people_ooo):
     return order
 
 
-def roster_shuffler():
+# dates will be a list of [ [year, month, day], [year, month, day], ...]
+def is_available(person, people_ooo, date):
+    available = True
+    if date[0] in people_ooo[person]:
+        if date[1] in people_ooo[person][date[0]]:
+            if date[2] in people_ooo[person][date[0]][date[1]]:
+                available = False
+    return available
+
+# example usage:
+# print(swap_with_nearest(items, 2, is_available))
+# swaps item at index 2 ith nearest available (index 3)
+def swap_with_nearest(order, target_index, people_ooo, date):
+    n = len(order)
+
+    # Check outward from the target index
+    for offset in range(1, n):
+        left = target_index - offset
+        right = target_index + offset
+        if right >= n:  # to prevent index error when the count exceeds the max number of items
+            right -= n - 1
+
+        if left >= 0 and is_available(order[left], people_ooo, date):
+            order[target_index], order[left] = order[left], order[target_index]
+            return order
+
+        if right < n and is_available(order[right], people_ooo, date):
+            order[target_index], order[right] = order[right], order[target_index]
+            return order
+
+    # No swap found
+    return order
+
+def roster_shuffler(order, people_to_swap, dates_list, people_ooo):
+    number_of_swaps = len(people_to_swap)
+    if number_of_swaps > 0:
+        if number_of_swaps == 1:
+            print("implement nearest neighbour algo")
+        elif number_of_swaps >= 2:
+            print("See if they can swap with each other")
+            print("if unable to, implement nearest neighbour swap for all of them")
+    return order
 
 
 # TODO can be optimised further, this is slow if there is one person who cannot make it
