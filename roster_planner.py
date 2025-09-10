@@ -108,6 +108,7 @@ def is_available(person, people_ooo, date):
                 available = False
     return available
 
+
 # example usage:
 # print(swap_with_nearest(items, 2, is_available))
 # swaps item at index 2 ith nearest available (index 3)
@@ -131,6 +132,7 @@ def swap_with_nearest(order, target_index, people_ooo, date):
 
     # No swap found
     return order
+
 
 def roster_shuffler(order, people_to_swap, dates_list, people_ooo):
     number_of_swaps = len(people_to_swap)
