@@ -7,7 +7,7 @@ import random
 # Open the .ics file, adjust this accordingly
 desktop_file_path = "C:/Users/ace-j/Downloads/" + "FG1 OOO Calendar.ics"
 laptop_file_path = "C:/Users/User/Downloads/" + "FG1 OOO Calendar.ics"
-with open(laptop_file_path, "r", encoding="utf-8") as f:
+with open(desktop_file_path, "r", encoding="utf-8") as f:
     calendar = Calendar(f.read())
 
 
@@ -112,7 +112,17 @@ def is_available(person, people_ooo, date):
 # example usage:
 # print(swap_with_nearest(items, 2, is_available))
 # swaps item at index 2 ith nearest available (index 3)
-def swap_with_nearest(order, target_index, people_ooo, date):
+def swap_with_nearest(order, target_index, people_ooo, dates):
+    def check_and_arrange():
+        availability = True
+        for date1 in dates:
+            availability = is_available(order[left], people_ooo, date1)
+            if not availability:
+                break
+        if availability:
+            order[target_index], order[left] = order[left], order[target_index]
+        return order
+
     n = len(order)
 
     # Check outward from the target index
@@ -122,13 +132,11 @@ def swap_with_nearest(order, target_index, people_ooo, date):
         if right >= n:  # to prevent index error when the count exceeds the max number of items
             right -= n - 1
 
-        if left >= 0 and is_available(order[left], people_ooo, date):
-            order[target_index], order[left] = order[left], order[target_index]
-            return order
+        if left >= 0:
+            order = check_and_arrange()
 
-        if right < n and is_available(order[right], people_ooo, date):
-            order[target_index], order[right] = order[right], order[target_index]
-            return order
+        if right < n:
+            order = check_and_arrange()
 
     # No swap found
     return order
@@ -138,7 +146,8 @@ def roster_shuffler(order, people_to_swap, dates_list, people_ooo):
     number_of_swaps = len(people_to_swap)
     if number_of_swaps > 0:
         if number_of_swaps == 1:
-            print("implement nearest neighbour algo")
+            target_index = order.index(people_to_swap[0])
+            swap_with_nearest(order, target_index, people_ooo, date)
         elif number_of_swaps >= 2:
             print("See if they can swap with each other")
             print("if unable to, implement nearest neighbour swap for all of them")
@@ -231,7 +240,7 @@ def main():
     rosters = json.load(open("./fg1_rosters.json"))
     ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict)
     start_date = [2025, 9, 8]
-    rosters = calculate_rosters(rosters["pnw"], ooo_dict, start_date)
+    rosters["pnw"] = calculate_rosters(rosters["pnw"], ooo_dict, start_date)
     with open("./people_ooo.json", "w") as file:
         json.dump(ooo_dict, file, indent=4)
     with open("./fg1_rosters.json", "w") as file:
