@@ -3,11 +3,17 @@ import json
 from datetime import date, datetime, timedelta
 import math
 import random
+import os
 
 # Open the .ics file, adjust this accordingly
-desktop_file_path = "C:/Users/ace-j/Downloads/" + "FG1 OOO Calendar.ics"
-laptop_file_path = "C:/Users/User/Downloads/" + "FG1 OOO Calendar.ics"
-with open(desktop_file_path, "r", encoding="utf-8") as f:
+desktop_file_path = "C:/Users/ace-j/Downloads/"
+laptop_file_path = "C:/Users/User/Downloads/"
+# check which file path exists so that you don't need to keep switching when working on desktop or laptop
+if os.path.exists(desktop_file_path):
+    file_path = desktop_file_path + "FG1 OOO Calendar.ics"
+elif os.path.exists(laptop_file_path):
+    file_path = laptop_file_path + "FG1 OOO Calendar.ics"
+with open(file_path, "r", encoding="utf-8") as f:
     calendar = Calendar(f.read())
 
 
