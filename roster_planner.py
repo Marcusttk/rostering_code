@@ -5,7 +5,7 @@ import math
 import random
 import os
 
-# Open the .ics file, adjust this accordingly
+# Adjust this accordingly based on computer file path
 desktop_file_path = "C:/Users/ace-j/Downloads/"
 laptop_file_path = "C:/Users/User/Downloads/"
 # check which file path exists so that you don't need to keep switching when working on desktop or laptop
