@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import math
 import random
 import os
+import itertools
 
 # Adjust this accordingly based on computer file path
 desktop_file_path = "C:/Users/ace-j/Downloads/"
@@ -119,14 +120,14 @@ def is_available(person, people_ooo, date):
 # print(swap_with_nearest(items, 2, is_available))
 # swaps item at index 2 ith nearest available (index 3)
 def swap_with_nearest(order, target_index, people_ooo, dates):
-    def check_and_arrange():
+    def check_and_arrange(person):
         availability = True
         for date1 in dates:
-            availability = is_available(order[left], people_ooo, date1)
+            availability = is_available(person, people_ooo, date1)
             if not availability:
                 break
         if availability:
-            order[target_index], order[left] = order[left], order[target_index]
+            order[target_index], person = person, order[target_index]
         return order
 
     n = len(order)
@@ -139,33 +140,61 @@ def swap_with_nearest(order, target_index, people_ooo, dates):
             right -= n - 1
 
         if left >= 0:
-            order = check_and_arrange()
+            order = check_and_arrange(order[left])
 
         if right < n:
-            order = check_and_arrange()
+            order = check_and_arrange(order[right])
 
     # No swap found
     return order
 
 
-def roster_shuffler(order, people_to_swap, dates_list, people_ooo):
-    number_of_swaps = len(people_to_swap)
-    if number_of_swaps > 0:
-        if number_of_swaps == 1:
-            target_index = order.index(people_to_swap[0])
-            swap_with_nearest(order, target_index, people_ooo, date)
-        elif number_of_swaps >= 2:
-            print("See if they can swap with each other")
-            print("if unable to, implement nearest neighbour swap for all of them")
-    return order
+# people to swap should be a list
+def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
+    # Generate all permutations
+    perms = list(itertools.permutations(people_to_swap))
+    # Exclude the original
+    perms = [p for p in perms if list(p) != people_to_swap]
+
+
+def roster_shuffler(rostered_dict, order, people_ooo):
+    full_order = []
+    for cycles in rostered_dict:
+        if rostered_dict[cycles]:
+            number_of_swaps = len(rostered_dict[cycles])
+            new_order = order  # this line shouldn't be necessary, only added it to get rid of the warning
+            if number_of_swaps == 1:
+                target_index = order.index(rostered_dict[cycles])
+                new_order = swap_with_nearest(order, target_index, people_ooo, next(iter(rostered_dict[cycles]))[1])
+            elif number_of_swaps >= 2:
+                print("See if they can swap with each other")
+                list_of_people_to_swap = list(rostered_dict[cycles].keys())
+                print("if unable to, implement nearest neighbour swap for all of them")
+            full_order.append(new_order)
+        else:
+            full_order.append(order)
+
+
+def assign_dates_to_people(orders, dates_list, repeats):
+    assigned_roster = {}
+    for people in orders:
+        assigned_roster[people] = {}
+    for count in range(0, repeats):
+        counter = count * len(orders)
+        people_count = 0
+        for people in orders:
+            date_count = counter + people_count
+            assigned_roster[people][count] = dates_list[date_count]
+    return assigned_roster
 
 
 # TODO can be optimised further, this is slow if there is one person who cannot make it
-def check_their_availability(order, dates_list, people_ooo):
+def check_their_availability_previous(order, dates_list, people_ooo):
     count = 0
     people_who_need_to_swap = []
     for people in order:
         if people not in people_ooo:
+            # TODO investigate this, see if there any errors
             print(people + " is not in people_ooo")
         else:
             for dates in dates_list[count]:
@@ -173,6 +202,29 @@ def check_their_availability(order, dates_list, people_ooo):
                     people_who_need_to_swap.append(people)
         count += 1
     return people_who_need_to_swap
+
+
+def check_their_availability(rostered_dict, people_ooo, repeats):
+    count = 0
+    unavailable_people = {}
+    for count in range(repeats):
+        unavailable_people[count] = {}
+
+    for people in rostered_dict:
+        if people not in people_ooo:
+            # TODO investigate this, see if there any errors
+            print(people + " is not in people_ooo")
+        else:
+            for cycles in rostered_dict[people]:
+                dates_unavailable = []
+                for dates in rostered_dict[people][cycles]:
+                    if str(dates[2]) in people_ooo[people][str(dates[0])][str(dates[1])]:
+                        dates_unavailable.append(dates)
+                # TODO including info on what day of the week it is would help speed up runtime later on.
+                if dates_unavailable:
+                    # you want to include the dates that they are unavailable, and the full range of dates you checked
+                    unavailable_people[count][people] = [dates_unavailable, rostered_dict[people][cycles]]
+    return unavailable_people
 
 
 def build_dates_list(start_date, days_of_the_week, repeats):
@@ -227,12 +279,9 @@ def calculate_rosters(roster, ooo_dict, start_date):
         duration = 12  # number of weeks, can be adjusted
         repeats = compute_repeats(roster["order"], duration)
         all_days = build_dates_list(start, roster["applicable days"], repeats)
-        people_to_swap = check_their_availability(roster["order"], all_days, ooo_dict)
-        # only bother to run swapping algo if there is one person who is unable to make it.
-        if people_to_swap:
-            new_order = roster_shuffle(roster["order"], people_to_swap, all_days, ooo_dict)
-        else:
-            new_order = roster["order"]
+        roster_to_check = assign_dates_to_people(roster["order"], all_days, repeats)
+        people_to_swap = check_their_availability(roster_to_check, ooo_dict, repeats)
+        new_order = roster_shuffle(roster["order"], people_to_swap, all_days, ooo_dict)
         roster_solution = create_schedule(new_order, all_days, repeats)
         for items in roster_solution:
             roster["dates"][items] = roster_solution[items]
