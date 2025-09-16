@@ -154,7 +154,21 @@ def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
     # Generate all permutations
     perms = list(itertools.permutations(people_to_swap))
     # Exclude the original
-    perms = [p for p in perms if list(p) != people_to_swap]
+    perms_to_try = [p for p in perms if list(p) != people_to_swap]
+    all_dates = []
+    # generate the order of dates to try:
+    for people in people_to_swap:
+        all_dates.append[people_ooo[people]]
+    for perms in perms_to_try:
+        people_count = 0
+        available = True
+        for people_count in range(len(perms)):
+            for dates in all_dates[people_count]:
+                # TODO adjust this if there are optional and mandatory dates instead of all mandatory
+                if str(dates[2]) in people_ooo[perms[people_count]][str(dates[0])][str(dates[1])]:
+                    available = False
+                    break
+
 
 
 def roster_shuffler(rostered_dict, order, people_ooo):
