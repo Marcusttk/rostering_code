@@ -1,4 +1,4 @@
-from roster_planner import *
+# from roster_planner import *
 
 
 # TODO need to implement a unit test for the swapping of people
@@ -15,3 +15,10 @@ swap_one_person_end = ["aa", "ab", "c", "d", "e"]
 swap_two_people1 = ["e", "f", "g", "h"]
 swap_two_people2 = ["e", "y", "f", "g", "h"]
 print(1)
+
+# Example
+big_list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+small_list = ["e", "g", "b"]
+
+print(reorder_subset(big_list, small_list))
+

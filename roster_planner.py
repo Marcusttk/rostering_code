@@ -149,6 +149,20 @@ def swap_with_nearest(order, target_index, people_ooo, dates):
     return order
 
 
+def reorder_subset(big_list, small_list):
+    # Create a mapping from item -> its new index in small_list
+    order_map = {item: i for i, item in enumerate(small_list)}
+
+    # Extract items that are in small_list and sort them by the new order
+    reordered = iter(sorted(
+        (item for item in big_list if item in small_list),
+        key=lambda x: order_map[x]
+    ))
+
+    # Rebuild big_list: replace small_list items with the next from reordered
+    return [next(reordered) if item in small_list else item for item in big_list]
+
+
 # people to swap should be a list
 def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
     # Generate all permutations
@@ -156,6 +170,7 @@ def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
     # Exclude the original
     perms_to_try = [p for p in perms if list(p) != people_to_swap]
     all_dates = []
+    new_order = []
     # generate the order of dates to try:
     for people in people_to_swap:
         all_dates.append[people_ooo[people]]
@@ -168,7 +183,9 @@ def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
                 if str(dates[2]) in people_ooo[perms[people_count]][str(dates[0])][str(dates[1])]:
                     available = False
                     break
-
+        if available:
+            new_order = reorder_subset(order, perms)
+    return new_order
 
 
 def roster_shuffler(rostered_dict, order, people_ooo):
@@ -181,12 +198,15 @@ def roster_shuffler(rostered_dict, order, people_ooo):
                 target_index = order.index(rostered_dict[cycles])
                 new_order = swap_with_nearest(order, target_index, people_ooo, next(iter(rostered_dict[cycles]))[1])
             elif number_of_swaps >= 2:
-                print("See if they can swap with each other")
                 list_of_people_to_swap = list(rostered_dict[cycles].keys())
-                print("if unable to, implement nearest neighbour swap for all of them")
+                new_order = swap_among_themselves(order, list_of_people_to_swap, people_ooo, rostered_dict[cycles])
+                if not new_order:
+                    print("No solution found for swapping among themselves. Resolve this LOL")
+                    exit()
             full_order.append(new_order)
         else:
             full_order.append(order)
+    return full_order
 
 
 def assign_dates_to_people(orders, dates_list, repeats):
