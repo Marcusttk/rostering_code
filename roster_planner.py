@@ -261,9 +261,10 @@ def check_their_availability(rostered_dict, people_ooo, repeats):
     return unavailable_people
 
 
-def build_dates_list(start_date, days_of_the_week, repeats):
+def build_dates_list(start_date, days_of_the_week, repeats, order):
     all_days = []
-    for times in range(repeats):
+    total_days = repeats * len(order)
+    for times in range(total_days):
         days_this_week = []
         for days in days_of_the_week:
             new_date = start_date + timedelta(days=int(days))
@@ -277,9 +278,9 @@ def build_dates_list(start_date, days_of_the_week, repeats):
 def compute_repeats(people_involved, duration):
     count = len(people_involved)
     if count >= 12:
-        repeats = count
+        repeats = 1
     else:
-        repeats = math.ceil(duration / count) * count
+        repeats = math.ceil(duration / count)
     return repeats
 
 
@@ -312,7 +313,7 @@ def calculate_rosters(roster, ooo_dict, start_date):
         # if it's longer than 3 months will round up to completion of next cycle.
         duration = 12  # number of weeks, can be adjusted
         repeats = compute_repeats(roster["order"], duration)
-        all_days = build_dates_list(start, roster["applicable days"], repeats)
+        all_days = build_dates_list(start, roster["applicable days"], repeats, roster["order"])
         roster_to_check = assign_dates_to_people(roster["order"], all_days, repeats)
         people_to_swap = check_their_availability(roster_to_check, ooo_dict, repeats)
         new_order = roster_shuffle(roster["order"], people_to_swap, all_days, ooo_dict)
