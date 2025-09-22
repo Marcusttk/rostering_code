@@ -6,19 +6,8 @@ import random
 import os
 import itertools
 
-# Adjust this accordingly based on computer file path
-desktop_file_path = "C:/Users/ace-j/Downloads/"
-laptop_file_path = "C:/Users/User/Downloads/"
-# check which file path exists so that you don't need to keep switching when working on desktop or laptop
-if os.path.exists(desktop_file_path):
-    file_path = desktop_file_path + "FG1 OOO Calendar.ics"
-elif os.path.exists(laptop_file_path):
-    file_path = laptop_file_path + "FG1 OOO Calendar.ics"
-with open(file_path, "r", encoding="utf-8") as f:
-    calendar = Calendar(f.read())
 
-
-def read_calendar(calendar_object):
+def read_calendar(calendar_object, calendar):
     # Loop through events
     # sample:
     # Event: des medical appt
@@ -79,7 +68,7 @@ def update_ooo_dict(dates, person, ooo_dict):
     return ooo_dict
 
 
-def build_calendar_dict(people_dict, ooo_dict):
+def build_calendar_dict(people_dict, ooo_dict, calendar):
     now = date.today()
     for event in calendar.events:
         relevant_event = check_date(now, event.begin)
@@ -188,14 +177,15 @@ def swap_among_themselves(order, people_to_swap, people_ooo, dates_dict):
     return new_order
 
 
-def roster_shuffler(rostered_dict, order, people_ooo):
+# rostered_dict e.g. : {'Ysabella': {0: [[2025, 9, 8]] }, 'Melodee': {0: [[2025, 9, 15]]},
+def roster_adjust(rostered_dict, order, people_ooo, people_to_swap):
     full_order = []
-    for cycles in rostered_dict:
-        if rostered_dict[cycles]:
-            number_of_swaps = len(rostered_dict[cycles])
+    for cycles in people_to_swap:
+        if people_to_swap[cycles]:
+            number_of_swaps = len(people_to_swap[cycles])
             new_order = order  # this line shouldn't be necessary, only added it to get rid of the warning
             if number_of_swaps == 1:
-                target_index = order.index(rostered_dict[cycles])
+                target_index = order.index(people_to_swap[cycles])
                 new_order = swap_with_nearest(order, target_index, people_ooo, next(iter(rostered_dict[cycles]))[1])
             elif number_of_swaps >= 2:
                 list_of_people_to_swap = list(rostered_dict[cycles].keys())
@@ -206,6 +196,8 @@ def roster_shuffler(rostered_dict, order, people_ooo):
             full_order.append(new_order)
         else:
             full_order.append(order)
+    print(full_order)
+    exit()
     return full_order
 
 
@@ -219,6 +211,7 @@ def assign_dates_to_people(orders, dates_list, repeats):
         for people in orders:
             date_count = counter + people_count
             assigned_roster[people][count] = dates_list[date_count]
+            people_count += 1
     return assigned_roster
 
 
@@ -241,6 +234,7 @@ def check_their_availability_previous(order, dates_list, people_ooo):
 def check_their_availability(rostered_dict, people_ooo, repeats):
     count = 0
     unavailable_people = {}
+    # print("Rostered_dict in check_their_availability:" + str(rostered_dict))
     for count in range(repeats):
         unavailable_people[count] = {}
 
@@ -264,20 +258,22 @@ def check_their_availability(rostered_dict, people_ooo, repeats):
 def build_dates_list(start_date, days_of_the_week, repeats, order):
     all_days = []
     total_days = repeats * len(order)
+    # print(days_of_the_week)
     for times in range(total_days):
         days_this_week = []
         for days in days_of_the_week:
-            new_date = start_date + timedelta(days=int(days))
+            new_date = start_date + timedelta(days=int(days) - 1)
             days_this_week.append([new_date.year, new_date.month, new_date.day])
         all_days.append(days_this_week)
         start_date += timedelta(days=int(7))
+    # print(all_days)
     return all_days
 
 
 # duration needs to be measured in terms of weeks
 def compute_repeats(people_involved, duration):
     count = len(people_involved)
-    if count >= 12:
+    if count >= duration:
         repeats = 1
     else:
         repeats = math.ceil(duration / count)
@@ -315,21 +311,53 @@ def calculate_rosters(roster, ooo_dict, start_date):
         repeats = compute_repeats(roster["order"], duration)
         all_days = build_dates_list(start, roster["applicable days"], repeats, roster["order"])
         roster_to_check = assign_dates_to_people(roster["order"], all_days, repeats)
+        # print("roster_to_check: " + str(roster_to_check))
         people_to_swap = check_their_availability(roster_to_check, ooo_dict, repeats)
-        new_order = roster_shuffle(roster["order"], people_to_swap, all_days, ooo_dict)
+        # print("people_to_swap: " + str(people_to_swap))
+        new_order = roster_adjust(roster_to_check, roster["order"], ooo_dict, people_to_swap)
         roster_solution = create_schedule(new_order, all_days, repeats)
+        print(roster_solution)
+        exit()
         for items in roster_solution:
             roster["dates"][items] = roster_solution[items]
     return roster
 
 
-def main():
+def main_test(start_date, test_file):
+    with open(test_file, "r", encoding="utf-8") as f:
+        calendar = Calendar(f.read())
     # update all shorthands in the fg1_names.json also
     people_dict = json.load(open("./fg1_names.json"))
     ooo_dict = json.load(open("./people_ooo.json"))
     rosters = json.load(open("./fg1_rosters.json"))
-    ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict)
-    start_date = [2025, 9, 8]
+    ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict, calendar)
+    # start_date = [2025, 9, 8]
+    rosters["pnw"] = calculate_rosters(rosters["pnw"], ooo_dict, start_date)
+    with open("./people_ooo.json", "w") as file:
+        json.dump(ooo_dict, file, indent=4)
+    with open("./fg1_rosters.json", "w") as file:
+        json.dump(rosters, file, indent=4)
+    # ics file is deleted so that you don't have to keep changing the name to the latest copy.
+
+
+def main():
+    # Adjust this accordingly based on computer file path
+    desktop_file_path = "C:/Users/ace-j/Downloads/"
+    laptop_file_path = "C:/Users/User/Downloads/"
+    # check which file path exists so that you don't need to keep switching when working on desktop or laptop
+    if os.path.exists(desktop_file_path):
+        file_path = desktop_file_path + "FG1 OOO Calendar.ics"
+    elif os.path.exists(laptop_file_path):
+        file_path = laptop_file_path + "FG1 OOO Calendar.ics"
+    with open(file_path, "r", encoding="utf-8") as f:
+        calendar = Calendar(f.read())
+    # update all shorthands in the fg1_names.json also
+    people_dict = json.load(open("./fg1_names.json"))
+    ooo_dict = json.load(open("./people_ooo.json"))
+    rosters = json.load(open("./fg1_rosters.json"))
+    ooo_dict = build_calendar_dict(people_dict["all"], ooo_dict, calendar)
+    # TODO what if this date is not a monday
+    start_date = [2025, 9, 8]  # for now, ensure starting date is a monday
     rosters["pnw"] = calculate_rosters(rosters["pnw"], ooo_dict, start_date)
     with open("./people_ooo.json", "w") as file:
         json.dump(ooo_dict, file, indent=4)
