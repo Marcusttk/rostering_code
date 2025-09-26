@@ -183,12 +183,13 @@ def roster_adjust(rostered_dict, order, people_ooo, people_to_swap):
     for cycles in people_to_swap:
         if people_to_swap[cycles]:
             number_of_swaps = len(people_to_swap[cycles])
+            list_of_people_to_swap = list(rostered_dict.keys())
             new_order = order  # this line shouldn't be necessary, only added it to get rid of the warning
             if number_of_swaps == 1:
-                target_index = order.index(people_to_swap[cycles])
-                new_order = swap_with_nearest(order, target_index, people_ooo, next(iter(rostered_dict[cycles]))[1])
+                target_index = order.index(list_of_people_to_swap[0])
+                dates = next(iter(people_to_swap[cycles].values()))[1]
+                new_order = swap_with_nearest(order, target_index, people_ooo, dates)
             elif number_of_swaps >= 2:
-                list_of_people_to_swap = list(rostered_dict[cycles].keys())
                 new_order = swap_among_themselves(order, list_of_people_to_swap, people_ooo, rostered_dict[cycles])
                 if not new_order:
                     print("No solution found for swapping among themselves. Resolve this LOL")
