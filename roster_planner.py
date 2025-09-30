@@ -98,10 +98,11 @@ def roster_shuffle(order, people_to_swap, dates_list, people_ooo):
 # dates will be a list of [ [year, month, day], [year, month, day], ...]
 def is_available(person, people_ooo, date):
     available = True
-    if date[0] in people_ooo[person]:
-        if date[1] in people_ooo[person][date[0]]:
-            if date[2] in people_ooo[person][date[0]][date[1]]:
-                available = False
+    if person in people_ooo:
+        if date[0] in people_ooo[person]:
+            if date[1] in people_ooo[person][date[0]]:
+                if date[2] in people_ooo[person][date[0]][date[1]]:
+                    available = False
     return available
 
 
@@ -109,31 +110,38 @@ def is_available(person, people_ooo, date):
 # print(swap_with_nearest(items, 2, is_available))
 # swaps item at index 2 ith nearest available (index 3)
 def swap_with_nearest(order, target_index, people_ooo, dates):
-    def check_and_arrange(person):
-        availability = True
+    def check_whether_they_ooo(person):
         for date1 in dates:
-            availability = is_available(person, people_ooo, date1)
-            if not availability:
+            on_leave = is_available(person, people_ooo, date1)
+            # print("person: " + str(person) + " " + str(on_leave))
+            if not on_leave:  # if false means they are ooo on that date
                 break
-        if availability:
-            order[target_index], person = person, order[target_index]
-        return order
+        return on_leave
 
     n = len(order)
-
+    print("original order:" + str(order))
     # Check outward from the target index
+    # you want to check the right most person first, then left most, then repeat with the 2nd right most, etc
     for offset in range(1, n):
-        left = target_index - offset
         right = target_index + offset
         if right >= n:  # to prevent index error when the count exceeds the max number of items
             right -= n - 1
+        # print("checking order[right]: " + str(order[right]))
+        not_ooo_right = check_whether_they_ooo(order[right])
+        print(not_ooo_right)
+        if not_ooo_right:
+            print("you here?")
+            order[right], order[target_index] = order[target_index], order[right]
+            break
+        else:
+            left = target_index - offset
+            if left >= 0:
+                not_ooo_left = check_whether_they_ooo(order[left])
+                if not_ooo_left:
+                    order[left], order[target_index] = order[target_index], order[left]
+                    break
 
-        if left >= 0:
-            order = check_and_arrange(order[left])
-
-        if right < n:
-            order = check_and_arrange(order[right])
-
+    print("new order: " + str(order))
     # No swap found
     return order
 
@@ -183,7 +191,8 @@ def roster_adjust(rostered_dict, order, people_ooo, people_to_swap):
     for cycles in people_to_swap:
         if people_to_swap[cycles]:
             number_of_swaps = len(people_to_swap[cycles])
-            list_of_people_to_swap = list(rostered_dict.keys())
+            print("people_to_swap: " + str(people_to_swap))
+            list_of_people_to_swap = list(people_to_swap[cycles].keys())
             new_order = order  # this line shouldn't be necessary, only added it to get rid of the warning
             if number_of_swaps == 1:
                 target_index = order.index(list_of_people_to_swap[0])
